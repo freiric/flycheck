@@ -63,164 +63,6 @@
 
 (require 'sh-script)                    ; For `sh-set-shell'
 
-(ert-deftest checker-bash-missing-semicolon ()
-  "Test a syntax error from a missing semicolon."
-  :expected-result (flycheck-testsuite-fail-unless-checker 'bash)
-  (flycheck-testsuite-with-hook sh-mode-hook (sh-set-shell "bash" :no-query)
-    (flycheck-testsuite-should-syntax-check
-     "checkers/bash-syntax-error.bash" 'sh-mode nil
-     '(5 nil "syntax error near unexpected token `fi'" error)
-     '(5 nil "`fi'" error))))
-
-(ert-deftest checker-c/c++-clang-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-clang-warning.c" 'c-mode 'c/c++-cppcheck
-   '(5 10 "unused variable 'unused'" warning)
-   '(7 15 "comparison of integers of different signs: 'int' and 'unsigned int'" warning)))
-
-(ert-deftest checker-c/c++-clang-warning-customized ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c-mode-hook
-      ;; Disable conversion checks by removing -Wextra, but additionally warn
-      ;; about missing prototypes, which isn't included in -Wextra
-      (setq flycheck-clang-warnings '("all" "missing-prototypes"))
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-warning.c" 'c-mode 'c/c++-cppcheck
-     '(3 5 "no previous prototype for function 'f'" warning)
-     '(5 10 "unused variable 'unused'" warning))))
-
-(ert-deftest checker-c/c++-clang-fatal-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-clang-fatal-error.c" 'c-mode nil
-   '(2 10 "'c_c++-clang-library-header.h' file not found" error)))
-
-(ert-deftest checker-c/c++-clang-include-path ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c-mode-hook
-      (setq flycheck-clang-include-path '("./include"))
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-fatal-error.c" 'c-mode nil)))
-
-(ert-deftest checker-c/c++-clang-includes ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c++-mode-hook
-      (setq flycheck-clang-includes
-            (list (flycheck-testsuite-resource-filename "checkers/include/c_c++-clang-library-header.h")))
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-error.cpp" 'c++-mode nil
-     '(10 16 "use of undeclared identifier 'nullptr'" error))))
-
-(ert-deftest checker-c/c++-clang-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-clang-error.cpp" 'c++-mode nil
-   '(8 17 "implicit instantiation of undefined template 'test<false>'" error)
-   '(10 16 "use of undeclared identifier 'nullptr'" error)))
-
-(ert-deftest checker-c/c++-clang-error-language-standard ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c++-mode-hook
-      (setq flycheck-clang-language-standard "c++11")
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-error.cpp" 'c++-mode nil
-     '(8 17 "implicit instantiation of undefined template 'test<false>'" error))))
-
-(ert-deftest checker-c/c++-clang-standard-library ()
-  :expected-result :failed
-  ;; I simply have no idea how to test for a standard library. Suggestions welcome
-  (error "Not implemented"))
-
-(ert-deftest checker-c/c++-clang-error-definitions ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c++-mode-hook
-      (setq flycheck-clang-definitions '("FLYCHECK_LOCAL" "FLYCHECK_LIBRARY"))
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-error.cpp" 'c++-mode nil
-     '(10 16 "use of undeclared identifier 'nullptr'" error))))
-
-(ert-deftest checker-c/c++-clang-error-no-rtti ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-clang)
-  (flycheck-testsuite-with-hook c++-mode-hook
-      (setq flycheck-clang-no-rtti t)
-    ;; Clang doesn't throw errors for RTTI operators :|, so we basically just
-    ;; test that the option flag doesn't cause any issues
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-clang-error-rtti.cpp" 'c++-mode nil)))
-
-(ert-deftest checker-c/c++-cppcheck-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-cppcheck)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-cppcheck-error.c" 'c-mode 'c/c++-clang
-   '(4 nil "Null pointer dereference" error)))
-
-(ert-deftest checker-c/c++-cppcheck-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-cppcheck)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-cppcheck-warning.c" 'c-mode 'c/c++-clang
-   '(2 nil "The expression \"x\" is of type 'bool' and it is compared against a integer value that is neither 1 nor 0." warning)))
-
-(ert-deftest checker-c/c++-cppcheck-style ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-cppcheck)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/c_c++-cppcheck-style.c" 'c-mode 'c/c++-clang
-   '(3 nil "Unused variable: unused" warning)))
-
-(ert-deftest checker-c/c++-cppcheck-style-suppressed ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-cppcheck)
-  (flycheck-testsuite-with-hook c-mode-hook
-      (setq flycheck-cppcheck-checks nil)
-    (flycheck-testsuite-should-syntax-check
-     "checkers/c_c++-cppcheck-style.c" 'c-mode 'c/c++-clang)))
-
-(ert-deftest checker-c/c++-cppcheck-multiple-checks ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'c/c++-cppcheck)
-  (flycheck-testsuite-with-hook c++-mode-hook
-      (setq flycheck-cppcheck-checks '("performance" "portability"))
-      (flycheck-testsuite-should-syntax-check
-       "checkers/c_c++-cppcheck-multiple-checks.cpp" 'c++-mode 'c/c++-clang
-       '(2 nil "Extra qualification 'A::' unnecessary and considered an error by many compilers." warning)
-       '(9 nil "Prefix ++/-- operators should be preferred for non-primitive types. Pre-increment/decrement can be more efficient than post-increment/decrement. Post-increment/decrement usually involves keeping a copy of the previous value around and adds a little extra code." warning))))
-
-(ert-deftest checker-coffee-syntax-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'coffee)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/coffee-syntax-error.coffee" 'coffee-mode nil
-   '(4 7 "missing \", starting" error)))
-
-(ert-deftest checker-coffee-coffeelint-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'coffee-coffeelint)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/coffee-coffeelint-error.coffee" 'coffee-mode nil
-   '(4 nil "Throwing strings is forbidden" error
-       :checker coffee-coffeelint)))
-
-(ert-deftest checker-coffee-coffeelint-warning ()
-  "Test a coffeelint error demoted to a warning via config file."
-  :expected-result (flycheck-testsuite-fail-unless-checker 'coffee-coffeelint)
-  (flycheck-testsuite-with-hook coffee-mode-hook
-      (setq flycheck-coffeelintrc "coffeelint.json")
-    (flycheck-testsuite-should-syntax-check
-     "checkers/coffee-coffeelint-error.coffee" 'coffee-mode nil
-     '(4 nil "Throwing strings is forbidden" warning
-         :checker coffee-coffeelint))))
-
-(ert-deftest checker-css-csslint-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'css-csslint)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/css-csslint-warning.css" 'css-mode nil
-   '(3 6 "Heading (h1) should not be qualified." warning)))
-
-(ert-deftest checker-css-csslint-syntax-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'css-csslint)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/css-syntax-error.css" 'css-mode nil
-   '(4 16 "Expected LBRACE at line 4, col 16." error)
-   '(4 16 "Unexpected token '100%' at line 4, col 16." error)
-   '(4 20 "Unexpected token ';' at line 4, col 20." error)
-   '(5 1 "Unexpected token '}' at line 5, col 1." error)))
-
 (ert-deftest flycheck-d-module-name ()
   (with-temp-buffer
     (insert "Hello world")
@@ -241,44 +83,6 @@
   (flycheck-testsuite-with-resource-buffer "checkers/package.d"
     (should (f-same? (flycheck-d-base-directory)
                      flycheck-testsuite-resources-dir))))
-
-(ert-deftest checker-d-dmd-syntax-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'd-dmd)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/d-dmd-syntax-error.d" 'd-mode nil
-   '(2 nil "module studio is in file 'std/studio.d' which cannot be read" error)))
-
-(ert-deftest checker-d-dmd-syntax-error-without-module ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'd-dmd)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/d_dmd_syntax_error_without_module.d" 'd-mode nil
-   '(5 nil "undefined identifier writel, did you mean template write(T...)(T args) if (!is(T[0] : File))?" error)))
-
-(ert-deftest checker-d-dmd-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'd-dmd)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/d-dmd-warning.d" 'd-mode nil
-   '(6 nil "statement is not reachable" warning)))
-
-(ert-deftest checker-d-dmd-deprecated ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'd-dmd)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/d-dmd-deprecated.d" 'd-mode nil
-   '(11 nil "function d_dmd_deprecated.foo is deprecated" warning)))
-
-(ert-deftest checker-elixir-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'elixir)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/elixir-error.ex" 'elixir-mode nil
-   '(5 nil "function puts/1 undefined" error)))
-
-(ert-deftest checker-elixir-warnings ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'elixir)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/elixir-warnings.ex" 'elixir-mode nil
-   '(5 nil "variable a is unused" warning)
-   '(6 nil "variable a shadowed in 'fun'" warning)
-   '(14 nil "this clause cannot match because a previous clause at line 11 always matches" warning)))
 
 (ert-deftest checker-emacs-lisp-checkdoc-warning ()
   "Test a checkdoc warning caused by a missing period in a docstring."
@@ -417,46 +221,6 @@ See URL `https://github.com/flycheck/flycheck/issues/45' and URL
     (rename-buffer "foo-autoloads.el")
     (should (not (flycheck-may-use-checker 'emacs-lisp)))))
 
-(ert-deftest checker-erlang-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'erlang)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/erlang-error.erl" 'erlang-mode nil
-   '(7 nil "head mismatch" error)))
-
-(ert-deftest checker-erlang-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'erlang)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/erlang-warning.erl" 'erlang-mode nil
-   '(6 nil "wrong number of arguments in format call" warning)))
-
-(ert-deftest checker-go-gofmt-syntax-error ()
-  "Test a syntax error."
-  :expected-result (flycheck-testsuite-fail-unless-checker 'go-gofmt)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/go-syntax-error.go" 'go-mode nil
-   '(5 9 "expected '(', found 'IDENT' ta" error)
-   '(6 1 "expected ')', found '}'" error)))
-
-(ert-deftest checker-go-build-error ()
-  "Test an import error."
-  :expected-result (flycheck-testsuite-fail-unless-checker 'go-build)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/go-testpackage/go-build-error.go" 'go-mode nil
-   '(6 nil "undefined: fmt" error :checker go-build)))
-
-(ert-deftest checker-go-test-error ()
-  "Test an import error."
-  :expected-result (flycheck-testsuite-fail-unless-checker 'go-test)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/go-testpackage/go-test-error_test.go" 'go-mode nil
-   '(8 nil "undefined: fmt" error :checker go-test)))
-
-(ert-deftest checker-haml-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'haml)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/haml-error.haml" 'haml-mode nil
-   '(5 nil "Inconsistent indentation: 3 spaces used for indentation, but the rest of the document was indented using 2 spaces." error :filename nil)))
-
 (ert-deftest checker-haskell-hdevtools-error ()
   ;; HDevtools tests fail on Vagrant, because hdevtools can't create unix
   ;; sockets on shared folders…
@@ -476,20 +240,6 @@ See URL `https://github.com/flycheck/flycheck/issues/45' and URL
    "checkers/haskell-hdevtools-warning.hs" 'haskell-mode nil
    '(3 1 "Top-level binding with no type signature: foo :: Integer" warning
        :checker haskell-hdevtools)))
-
-(ert-deftest checker-haskell-ghc-error ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'haskell-ghc)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/haskell-ghc-error.hs" 'haskell-mode 'haskell-hdevtools
-   '(3 1 "parse error on input `module'" error
-       :checker haskell-ghc)))
-
-(ert-deftest checker-haskell-ghc-warning ()
-  :expected-result (flycheck-testsuite-fail-unless-checker 'haskell-ghc)
-  (flycheck-testsuite-should-syntax-check
-   "checkers/haskell-ghc-warning.hs" 'haskell-mode 'haskell-hdevtools
-   '(3 1 "Top-level binding with no type signature: foo :: Integer" warning
-       :checker haskell-ghc)))
 
 (ert-deftest checker-haskell-hlint-error ()
   :expected-result (flycheck-testsuite-fail-unless-checker 'haskell-hlint)

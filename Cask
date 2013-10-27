@@ -9,6 +9,8 @@
 
  (depends-on "ert")                     ; Unit test library
  (depends-on "ert-runner")              ; Unit test runner
+ (depends-on "ecukes")
+ (depends-on "espuds")
  (depends-on "mocker")                  ; Mocking library
 
  (depends-on "projectile")              ; Projectile integration
