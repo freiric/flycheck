@@ -3658,11 +3658,33 @@ See URL `http://haml.info'."
   ((error line-start "Syntax error on line " line ": " (message) line-end))
   :modes haml-mode)
 
+(flycheck-def-option-var flycheck-haskell-options nil haskell-hdevtools
+  "Ghc options to use for hdevtools.
+
+The value of this option is a list of options to be passed to hdevtools."
+  :type '(choice (const :tag "No additional haskell options" nil)
+                 (repeat :tag "Additional haskell options"
+                         (string :tag "haskell options")))
+  :safe #'stringp
+  :package-version '(flycheck . "0.15"))
+
+
+(flycheck-def-option-var flycheck-haskell-options-finder nil haskell-hdevtools
+  "Function retrieving ghc options to use for hdevtools.
+
+The value of this option is a function returning list of options to be passed to hdevtools."
+  :type '(function :tag "haskell options")
+  :safe #'stringp
+  :package-version '(flycheck . "0.15"))
+
 (flycheck-define-checker haskell-hdevtools
   "A Haskell syntax and type checker using hdevtools.
 
 See URL `https://github.com/bitc/hdevtools'."
-  :command ("hdevtools" "check" "-g" "-Wall" source-inplace)
+  :command ("hdevtools" "check"
+            (eval (flycheck-prepend-with-option "-g" flycheck-haskell-options-finder))
+            (option-list "-g" flycheck-haskell-options s-prepend)
+            "-g" "-Wall" source-inplace)
   :error-patterns
   ((warning line-start (file-name) ":" line ":" column ":"
             (or " " "\n    ") "Warning:" (optional "\n")
